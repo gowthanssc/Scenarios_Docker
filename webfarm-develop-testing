@@ -1,0 +1,211 @@
+Building a webfram environment for development and testing:
+
+This video will introduce the concepts we will be demonstrating over the next several use case videos. We will gather the information we need about our network and system prior to starting and detail the steps and process we will use to set up a web farm.
+
+Our first video will see us starting a build of a docker containerized web server from scratch using the individual concepts we have covered. Once this is complete, we will add services and commit the container to another base image we can use to further customize our web server instances.
+
+--> download VM
+--> Install Docker & Git for mandatory.
+
+Fallow the steps one by one:
+
+--> docker images
+--> docker pull centos:centos6
+--> docker images
+--> docker run -i -t centos:centos6 /bin/bash 
+--> # --> yum install wget
+	  wget http://dl.fedoraproject.org/pub /epel/6/x86_64/epel-release-6.8.noarch.rpm
+	  --> rpm -Uvh epel-release-6.8.noarch.rpm
+	  --> yum update
+	  --> yum install which sudo httpd php openssh-server (To build the complete Environment)
+
+	  -->whoami
+	  -->which service (/sbin/service)
+
+--> vi .bashrc
+
+	# add the service that we want to start 
+	/sbin/service httpd start
+	/sbin/service openssh-server start
+
+--> If we add the above to then, it will install from the container only not from the base image.
+
+--> exit (from the container)
+
+--> docker commit <containerID> centos6:baseweb (Now it allows the services,web are commited to centos6:baseweb, we can also go back and see.
+
+--> docker images
+--> docker run -i -t centos6:baseweb /bin/bash --> we can see that everything is Ok (Used for testing purpose)
+	can seee : unrecoginezed service.
+
+--> service sshd start
+--> exit
+--> docker images
+--> docker rmi centos6:baseweb (remove the container, if needed use force)
+
+--> docker start <contanier ID>
+--> docker attach <container ID>
+
+--> vi ~/.bashrc
+	# change again back to from openssh-server to sshd and remaining will be same
+	/sbin/service sshd start
+--> exit
+--> docker commit <container ID> centos6:baseweb
+--> docker images
+--> docker run -i -t centos:baseweb /bin/bash
+--> df -h (Here we can see that ssh2, sssh1, httpd ok)
+
+we can also check for the web page.
+
+--> Now we have to deploy a webserver to webfram.
+================================================================== ============================
+
+Now that we have a base image to inherit a web server instance from, we need to grab some web site code from Open Source Web Development (oswd.org). We will create a static working directory on our local host and spin up a container from that that mounts the content within the container. We will show how browse that instance from our local host and what the mounts look like. You can run this command to download the bluefreedom3 zip file with the bluefreedom web template: wget http://static.oswd.org/designs/3682/bluefreedom3.zip
+
+--> Download a zip file of bluefreedom3.zip by simply running in the command line by the fallowing command wget http://static.oswd.org/designs/3682/bluefreedom3.zip
+
+root @ ~ --> mkdir docker
+--> cd docker
+--> mkdir dockerwww
+--> cd dockerwww
+--> unzip ../../bluefreedom3.zip (Just unzip and paste the bluefreedom3.zip file and paste in this directory)
+--> ll
+--> mv bluefreedom3/* .
+ll
+--> rm -rf bluefreedom3/
+--> clear
+--> docker run --name=webtest -i -t centos:latest /bin/bash
+--> df -h
+
+--> cd /var/www/html
+--> ll ( can see the something )
+-->exit
+root @ dockerwww --> docker rm webtest
+
+--> docker run --name=webtest -v /root/docker/dockerwww:/var/www/html -i -t centos:baseweb /bin/bash
+
+--> exit
+
+we can also restore this changes in the git automatically
+
+--> git init .
+--> git add *
+--> git status
+--> git commit -m "This is the initial commit"
+--> docker start webtest
+--> docker attach webtest
+--> ps aux | grep httpd
+--> ifconfig
+--> df -h
+--> yum install git 
+--> cd /var/www/html
+--> ll
+--> ls -al
+html --> we can see the changes.
+
+===============================================================================================================
+
+We will now commit our container changes, add system services to start automatically and redirect the container port to a local port so that others outside the local host can see the website. We will talk about how to manage the static content base from within the container through git and then create our final base image for use in our web farm.
+
+--> docker images
+--> docker ps -a
+--> docker commit webtest centos6:server1
+--> docker images
+--> docker run -i -t centos6:server1 /bin/bash
+--> ps aux | grep http
+--> df -h
+clear
+
+--> docker run --name=externalweb -p 8081:80 -i -t -v /root/docker/dockerwww:/var/www/html centos6:serverv1 /bin/bash
+--> we can see the page in the link ( to access that)
+
+Open a New terminal :
+
+--> su - root
+--> docker ps
+--> It runs in port 8081 (If we observe)
+
+Go back to the before termial: 
+
+--> adduser naveen1234
+--> passwd naveen1234
+
+Now go to the New terminal that we have and connect through ssh
+
+--> ssh naveen1234@172.17.0.10  (we can login to the container Here, there is no need to attach to that contaniner)
+
+Go back to the before termial and if we see that the same container will be connected through ssh and also we can seee the same one.
+
+
+=================================================================================================================
+
+In this final stage of our web farm, we will harden and protect our environment by changing our mount from a git repository to a git clone (protecting the source of record) and starting multiple container instances, each redirected to a different local host port. Finally, we will install and configure an instance of NginX web server to serve as a proxy redirect and load balancer for our environment and discuss how that can help us in testing locally and remotely.
+
+
+--> docker images
+--> docker ps -a
+--> docker commit externalweb centos6:finalwebv1
+--> docker Images (we see image of finalwebv1)
+docker www --> git status
+	--> ls -al
+	--> git clone root@localhost:/root/docker/docker.git dockerwww
+	--> ll  (we get the replica of dockergit to dockerwww)
+	--> dockerwww (we can see) 
+In this dockerwww --> dockerimages 
+
+The above Just describes an Just for checking. Starts from Now:
+
+docker www--> docker run -d -i -t --name=devweb1 -p 8081:80 -v /root/docker/dockerwww:/var/www/html centos6:finalwebv1 /bin/bash
+
+Here for the above command we can see the ports mapped to port 8081, there we can see our website.
+
+--> docker run -d -i -t --name=devweb2 -p 8082:80 -v /root/docker/dockerwww:/var/www/html centos6:finalweb /bin/bash 
+
+--> docker ps ( we can see the both the ports 8081, 8082 )
+--> docker inspect devweb1 ( can see IP address) 
+--> docker inspect devweb2 (can see IP address)
+--> check that in the browser http://IPaddress:8080 & http://IPaddress:8081
+
+For Example: 
+
+--> sudo yum install epel-release
+--> sudo yum install nginx
+--> sudo systemctl start nginx
+--> sudo systemctl enable nginx
+
+--> Create a proxy : port 80 by going to 
+
+--> cd /etc/nginx
+--> cd sites-available
+
+--> create a configuration file that routs the traffic to 8081,8082 from the local host as below:
+
+--> vi default.config
+
+Paste the content below:
+
+	upstream container app {
+		server 192.168.1.35:8081;  ## Here 192.168.1.35 is you IPaddress of your local host can find in your ifconfig
+		server 192.168.1.35:8082; 
+	}
+	server {
+		listen *:80;
+		server_name 192.168.1.35;
+		index index.html index.htm index.php;
+
+		access_log /var/log/nginx/localweb.log;
+		error_log /var/log/nginx/localerr.log;
+
+		location / {
+			proxy_pass http://containerapp;
+		}
+
+--> save the file 
+
+--> Restart the nginx.
+
+Then the traffic routes to the localhost from 8081, 8082. 
+
+Note: In this final stage of our web farm, we will harden and protect our environment by changing our mount from a git repository to a git clone (protecting the source of record) and starting multiple container instances, each redirected to a different local host port. Finally, we will install and configure an instance of NginX web server to serve as a proxy redirect and load balancer for our environment and discuss how that can help us in testing locally and remotely.
+
+

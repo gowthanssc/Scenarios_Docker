@@ -1,0 +1,43 @@
+Integrating custom network In your Docker Container:
+
+--> docker images ( shows all the images)
+--> ps aux | grep docker ( What's services are running)
+--> service docker.io stop (stop the services)
+--> ps aux | grep docker ( check whether the services is stoped or not)
+
+Create a Network bridge adaptor interface:
+
+--> ip link add br10 type bridge ( br10 is the docker bridge that can be seen in the "ifconfig" )
+--> ip addr add 10.10.100.1/24 dev br10 ( Added the IPAddr to br10 )
+--> ip link set br10 up (Link & setting up the br10 to IPAddr we created)
+--> if config ( we can see the New bridge adaptor that we created)
+
+We have to configure that docker container has to configure & use to that Bridge Adaptor:
+
+--> docker.io -d -b br10 & (It takes time to End)
+
+Open New terminal and check that docker image is using the bridge adapter we created by running the command:
+
+--> docker run -i -t centos:centos6 /bin/bash
+--> ifconfig ( we can see that IP Address we created the bridge Adapter )
+--> ping 10.10.100.1 ( Check that the Brige adaptor is pinging to the internet or not)
+
+============================
+
+we can also save the commands by using the below commands:
+
+root @--> cd /etc/rc.local
+--> cd /etc/
+--> cat rc.local
+root @ etc-->cd network
+	network --> vim interfaces
+
+			# we can add interfaces also of br10, can add the fallowing to the interfaces.It will reboot the system
+
+			iface br10 inet static
+				address 10.10.100.1
+				netmask 255.255.255.0
+				bridge_ports dummy0
+				bridge_stp off
+				bridge_fd 0
+Note: Not all of our use cases have to be so complex! This is a simple method of taking control of our networking so that we can better integrate our networking components (IP, gateway, etc) into our local environment. Learn how to defeat the defaults for full control!

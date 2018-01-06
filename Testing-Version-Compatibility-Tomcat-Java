@@ -1,0 +1,96 @@
+Testing Version compatibility - Using Tomcat and Java:
+
+1. This video will outline the scenario our Use Case will be covering as well as talk about the materials and prerequisite information we need to gather before we start. We will be testing the compatibility of our java application against both Java 7 and 8 as well as both Apache Tomcat 7 and 8, running on each version. This is a common upgrade scenario that we can now do very quickly to determine the level of effort in upgrading dependencies and third party applications.
+
+Note : Install Java 8 & 7 and Tomcat 7 & 8 & sample.war file Before going ahead.
+
+2. Setting up our use case starts with layering functionality in our container. To maintain consistency, we are going to install one version of java in each base container (java 7 and 8) and then configure those containers so that the files we depend on are linked correctly in the environment. We will then commit those containers to new base images we can build our Tomcat instances from.
+
+
+Here in this below Example we pull the image and then based on that image we build a contianer and Install Java-jdk 7 out of it that we will make changes and exit out of that container and commit that changes to get a new image out of it.
+
+Steps:
+
+--> su -root
+
+--> docker images
+--> cd docker
+--> mkdir downloads
+--> cp /home/naveen1234/Downloads/apache* . (what is download  in the folder for user naveen1234 will get directly to here)
+--> cp /home/naveen1234/Downloads/jdk* .
+--> cp /home/naveen1234/Downloads/sample* .
+
+Built a container out of it by using below command.
+
+--> docker run -i -t --name=jdk7 -v /root/docker/downloads:/root/Downloads centos:centos6 /bin/bash
+
+Now we will be in the container
+
+--> df -h
+--> cd /root/Downloads/
+--> yum update
+--> yum install git wget sudo which ( To get the packages)
+--> ll
+--> mkdir tmp
+--> cd tmp
+--> tar zxvf ../jdk-7u80.targz ( what ever you downloaded the name of that )
+--> mv jdk1.7.0_71/ /opt/java (we are moving to the /opt/java directory )
+--> cd /opt
+--> cd java
+--> ll
+--> alternatives --install /usr/bin/java java /opt/java/bin/java 2 ( Here two is the preority)
+--> alternatives --config java
+--> java -version
+--> alternatives --install /usr/bin/jar jar /opt/java/bin/jar 2
+--> alternatives --install /usr/bin/java javac /opt/java/bin/javac 2
+--> alternatives --set jar /opt/java/bin/jar
+--> alternatives --set javac /opt/java/bin/javac
+--> javac -version
+--> which jar 
+--> exit
+
+Now commit the changes to get the base image.
+
+--> docker commit jdk7 centos6:java7
+--> clear
+--> docker images ( we will get the copy of the container in image) 
+===============================================================================
+
+Do the same procedure for the Java-jdk8 in another container with the base image of centos:centos6
+
+Built a container out of it by using below command.
+
+--> docker run -i -t --name=jdk8 -v /root/docker/downloads:/root/Downloads centos:centos6 /bin/bash
+
+Now we will be in the container
+
+--> df -h
+--> cd /root/Downloads/
+--> yum update
+--> yum install git wget sudo which ( To get the packages)
+--> ll
+--> mkdir tmp
+--> cd tmp
+--> tar zxvf ../jdk-8u80.targz ( what ever you downloaded the name of that )
+--> mv jdk1.8.0_81/ /opt/java (we are moving to the /opt/java directory )
+--> cd /opt
+--> cd java
+--> ll
+--> alternatives --install /usr/bin/java java /opt/java/bin/java 2 ( Here two is the preority)
+--> alternatives --config java
+--> java -version
+--> alternatives --install /usr/bin/jar jar /opt/java/bin/jar 2
+--> alternatives --install /usr/bin/java javac /opt/java/bin/javac 2
+--> alternatives --set jar /opt/java/bin/jar
+--> alternatives --set javac /opt/java/bin/javac
+--> javac -version
+--> which jar 
+--> exit
+
+Now commit the changes to get the base image.
+
+--> docker commit jdk8 centos6:java8
+--> clear
+--> docker images ( we will get the copy of the container in image)
+
+
